@@ -58,16 +58,7 @@
             plan.innerHTML = '';
             let tasks = JSON.parse(localStorage.getItem('dailyPlan')) || [];
             tasks.forEach(task => {
-                let taskElement = document.createElement('div');
-                taskElement.className = 'task';
-                taskElement.draggable = true;
-                taskElement.textContent = task;
-                taskElement.addEventListener('dragstart', () => {
-                    taskElement.classList.add('dragging');
-                });
-                taskElement.addEventListener('dragend', () => {
-                    taskElement.classList.remove('dragging');
-                });
+                let taskElement = createTaskElement(task.text, task.time);
                 plan.appendChild(taskElement);
             });
         }
@@ -75,25 +66,44 @@
         function savePlan() {
             let tasks = [];
             document.querySelectorAll('.task').forEach(task => {
-                tasks.push(task.textContent);
+                tasks.push({ text: task.querySelector('.task-text').textContent, time: task.querySelector('.task-time').textContent });
             });
             localStorage.setItem('dailyPlan', JSON.stringify(tasks));
             loadPlan();
         }
 
+        function createTaskElement(text, time) {
+            let taskElement = document.createElement('div');
+            taskElement.className = 'task';
+            taskElement.draggable = true;
+
+            let taskText = document.createElement('span');
+            taskText.className = 'task-text';
+            taskText.textContent = text;
+
+            let taskTime = document.createElement('span');
+            taskTime.className = 'task-time';
+            taskTime.textContent = time;
+
+            taskElement.appendChild(taskText);
+            taskElement.appendChild(taskTime);
+
+            taskElement.addEventListener('dragstart', () => {
+                taskElement.classList.add('dragging');
+            });
+            taskElement.addEventListener('dragend', () => {
+                taskElement.classList.remove('dragging');
+                savePlan();
+            });
+
+            return taskElement;
+        }
+
         function addTask() {
-            let task = prompt('Προσθέστε μια νέα εγγραφή:');
-            if (task) {
-                let taskElement = document.createElement('div');
-                taskElement.className = 'task';
-                taskElement.draggable = true;
-                taskElement.textContent = task;
-                taskElement.addEventListener('dragstart', () => {
-                    taskElement.classList.add('dragging');
-                });
-                taskElement.addEventListener('dragend', () => {
-                    taskElement.classList.remove('dragging');
-                });
+            let text = prompt('Προσθέστε μια νέα εγγραφή:');
+            let time = prompt('Προσθέστε την ώρα (π.χ. 14:00):');
+            if (text && time) {
+                let taskElement = createTaskElement(text, time);
                 plan.appendChild(taskElement);
                 savePlan();
             }
