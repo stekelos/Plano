@@ -22,9 +22,15 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             cursor: move;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         .task.dragging {
             opacity: 0.5;
+        }
+        .task.completed {
+            background-color: #d4edda;
         }
         .buttons {
             margin-top: 20px;
@@ -38,6 +44,9 @@
         }
         button:hover {
             background-color: #ddd;
+        }
+        .checkbox {
+            margin-right: 10px;
         }
     </style>
 </head>
@@ -57,8 +66,9 @@
         function loadPlan() {
             plan.innerHTML = '';
             let tasks = JSON.parse(localStorage.getItem('dailyPlan')) || [];
+            tasks.sort((a, b) => a.time.localeCompare(b.time));
             tasks.forEach(task => {
-                let taskElement = createTaskElement(task.text, task.time);
+                let taskElement = createTaskElement(task.text, task.time, task.completed);
                 plan.appendChild(taskElement);
             });
         }
@@ -66,16 +76,29 @@
         function savePlan() {
             let tasks = [];
             document.querySelectorAll('.task').forEach(task => {
-                tasks.push({ text: task.querySelector('.task-text').textContent, time: task.querySelector('.task-time').textContent });
+                tasks.push({
+                    text: task.querySelector('.task-text').textContent,
+                    time: task.querySelector('.task-time').textContent,
+                    completed: task.querySelector('.checkbox').checked
+                });
             });
             localStorage.setItem('dailyPlan', JSON.stringify(tasks));
             loadPlan();
         }
 
-        function createTaskElement(text, time) {
+        function createTaskElement(text, time, completed = false) {
             let taskElement = document.createElement('div');
             taskElement.className = 'task';
             taskElement.draggable = true;
+
+            let checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'checkbox';
+            checkbox.checked = completed;
+            checkbox.addEventListener('change', () => {
+                taskElement.classList.toggle('completed', checkbox.checked);
+                savePlan();
+            });
 
             let taskText = document.createElement('span');
             taskText.className = 'task-text';
@@ -85,6 +108,7 @@
             taskTime.className = 'task-time';
             taskTime.textContent = time;
 
+            taskElement.appendChild(checkbox);
             taskElement.appendChild(taskText);
             taskElement.appendChild(taskTime);
 
@@ -95,6 +119,8 @@
                 taskElement.classList.remove('dragging');
                 savePlan();
             });
+
+            taskElement.classList.toggle('completed', completed);
 
             return taskElement;
         }
