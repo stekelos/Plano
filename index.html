@@ -67,6 +67,11 @@
             width: 100%;
             text-align: center;
         }
+        @media print {
+            .buttons, .delete-btn {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -76,6 +81,7 @@
     <div class="buttons">
         <button onclick="addTask()">Προσθήκη Εγγραφής</button>
         <button onclick="deleteLastTask()">Διαγραφή Τελευταίας Εγγραφής</button>
+        <button onclick="undoDelete()">Αναίρεση Τελευταίας Διαγραφής</button>
         <button onclick="resetPlan()">Επαναφορά</button>
         <button onclick="clearAll()">Εκκαθάριση Όλων</button>
         <button onclick="printPlan()">Εκτύπωση</button>
@@ -83,6 +89,7 @@
 
     <script>
         let plan = document.getElementById('plan');
+        let lastDeletedTask = null;
 
         function loadPlan() {
             plan.innerHTML = '';
@@ -135,6 +142,7 @@
             deleteBtn.className = 'delete-btn';
             deleteBtn.textContent = 'Διαγραφή';
             deleteBtn.addEventListener('click', () => {
+                lastDeletedTask = { text, time, completed };
                 taskElement.remove();
                 savePlan();
             });
@@ -170,7 +178,21 @@
         function deleteLastTask() {
             let tasks = document.querySelectorAll('.task');
             if (tasks.length > 0) {
+                lastDeletedTask = {
+                    text: tasks[tasks.length - 1].querySelector('.task-text').textContent,
+                    time: tasks[tasks.length - 1].querySelector('.task-time').textContent,
+                    completed: tasks[tasks.length - 1].querySelector('.checkbox').checked
+                };
                 tasks[tasks.length - 1].remove();
+                savePlan();
+            }
+        }
+
+        function undoDelete() {
+            if (lastDeletedTask) {
+                let taskElement = createTaskElement(lastDeletedTask.text, lastDeletedTask.time, lastDeletedTask.completed);
+                plan.appendChild(taskElement);
+                lastDeletedTask = null;
                 savePlan();
             }
         }
@@ -221,3 +243,4 @@
     </script>
 </body>
 </html>
+
