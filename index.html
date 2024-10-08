@@ -87,6 +87,14 @@
         <button onclick="printPlan()">Εκτύπωση</button>
     </div>
 
+    <div class="date-range">
+        <label for="start-date">Από:</label>
+        <input type="date" id="start-date">
+        <label for="end-date">Έως:</label>
+        <input type="date" id="end-date">
+        <button onclick="printDateRange()">Εκτύπωση Εύρους Ημερομηνιών</button>
+    </div>
+
     <script>
         let plan = document.getElementById('plan');
         let lastDeletedTask = null;
@@ -94,9 +102,9 @@
         function loadPlan() {
             plan.innerHTML = '';
             let tasks = JSON.parse(localStorage.getItem('dailyPlan')) || [];
-            tasks.sort((a, b) => a.time.localeCompare(b.time));
+            tasks.sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
             tasks.forEach(task => {
-                let taskElement = createTaskElement(task.text, task.time, task.completed);
+                let taskElement = createTaskElement(task.text, task.dateTime, task.completed);
                 plan.appendChild(taskElement);
             });
             document.getElementById('title').value = localStorage.getItem('planTitle') || 'Ημερήσιο Πλάνο';
@@ -107,7 +115,7 @@
             document.querySelectorAll('.task').forEach(task => {
                 tasks.push({
                     text: task.querySelector('.task-text').textContent,
-                    time: task.querySelector('.task-time').textContent,
+                    dateTime: task.querySelector('.task-datetime').textContent,
                     completed: task.querySelector('.checkbox').checked
                 });
             });
@@ -116,7 +124,7 @@
             loadPlan();
         }
 
-        function createTaskElement(text, time, completed = false) {
+        function createTaskElement(text, dateTime, completed = false) {
             let taskElement = document.createElement('div');
             taskElement.className = 'task';
             taskElement.draggable = true;
@@ -134,22 +142,22 @@
             taskText.className = 'task-text';
             taskText.textContent = text;
 
-            let taskTime = document.createElement('span');
-            taskTime.className = 'task-time';
-            taskTime.textContent = time;
+            let taskDateTime = document.createElement('span');
+            taskDateTime.className = 'task-datetime';
+            taskDateTime.textContent = dateTime;
 
             let deleteBtn = document.createElement('button');
             deleteBtn.className = 'delete-btn';
             deleteBtn.textContent = 'Διαγραφή';
             deleteBtn.addEventListener('click', () => {
-                lastDeletedTask = { text, time, completed };
+                lastDeletedTask = { text, dateTime, completed };
                 taskElement.remove();
                 savePlan();
             });
 
             taskElement.appendChild(checkbox);
             taskElement.appendChild(taskText);
-            taskElement.appendChild(taskTime);
+            taskElement.appendChild(taskDateTime);
             taskElement.appendChild(deleteBtn);
 
             taskElement.addEventListener('dragstart', () => {
@@ -167,9 +175,9 @@
 
         function addTask() {
             let text = prompt('Προσθέστε μια νέα εγγραφή:');
-            let time = prompt('Προσθέστε την ώρα (π.χ. 14:00):');
-            if (text && time) {
-                let taskElement = createTaskElement(text, time);
+            let dateTime = prompt('Προσθέστε την ημερομηνία και ώρα (π.χ. 2024-10-08T14:00):');
+            if (text && dateTime) {
+                let taskElement = createTaskElement(text, dateTime);
                 plan.appendChild(taskElement);
                 savePlan();
             }
@@ -180,7 +188,7 @@
             if (tasks.length > 0) {
                 lastDeletedTask = {
                     text: tasks[tasks.length - 1].querySelector('.task-text').textContent,
-                    time: tasks[tasks.length - 1].querySelector('.task-time').textContent,
+                    dateTime: tasks[tasks.length - 1].querySelector('.task-datetime').textContent,
                     completed: tasks[tasks.length - 1].querySelector('.checkbox').checked
                 };
                 tasks[tasks.length - 1].remove();
@@ -190,7 +198,7 @@
 
         function undoDelete() {
             if (lastDeletedTask) {
-                let taskElement = createTaskElement(lastDeletedTask.text, lastDeletedTask.time, lastDeletedTask.completed);
+                let taskElement = createTaskElement(lastDeletedTask.text, lastDeletedTask.dateTime, lastDeletedTask.completed);
                 plan.appendChild(taskElement);
                 lastDeletedTask = null;
                 savePlan();
@@ -210,6 +218,24 @@
 
         function printPlan() {
             window.print();
+        }
+
+        function printDateRange() {
+            let startDate = new Date(document.getElementById('start-date').value);
+            let endDate = new Date(document.getElementById('end-date').value);
+            let tasks = document.querySelectorAll('.task');
+            tasks.forEach(task => {
+                let taskDate = new Date(task.querySelector('.task-datetime').textContent);
+                if (taskDate < startDate || taskDate > endDate) {
+                    task.style.display = 'none';
+                } else {
+                    task.style.display = 'flex';
+                }
+            });
+            window.print();
+            tasks.forEach(task => {
+                task.style.display = 'flex';
+            });
         }
 
         plan.addEventListener('dragover', (e) => {
@@ -243,4 +269,3 @@
     </script>
 </body>
 </html>
-
