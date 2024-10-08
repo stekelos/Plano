@@ -48,16 +48,37 @@
         .checkbox {
             margin-right: 10px;
         }
+        .delete-btn {
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            padding: 5px 10px;
+        }
+        .delete-btn:hover {
+            background-color: #ff1a1a;
+        }
+        .editable {
+            border: none;
+            background-color: transparent;
+            font-size: 1.5em;
+            font-weight: bold;
+            width: 100%;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
-    <h1>Ημερήσιο Πλάνο</h1>
+    <input id="title" class="editable" value="Ημερήσιο Πλάνο" />
+
     <div id="plan"></div>
     <div class="buttons">
         <button onclick="addTask()">Προσθήκη Εγγραφής</button>
         <button onclick="deleteLastTask()">Διαγραφή Τελευταίας Εγγραφής</button>
         <button onclick="resetPlan()">Επαναφορά</button>
         <button onclick="clearAll()">Εκκαθάριση Όλων</button>
+        <button onclick="printPlan()">Εκτύπωση</button>
     </div>
 
     <script>
@@ -71,6 +92,7 @@
                 let taskElement = createTaskElement(task.text, task.time, task.completed);
                 plan.appendChild(taskElement);
             });
+            document.getElementById('title').value = localStorage.getItem('planTitle') || 'Ημερήσιο Πλάνο';
         }
 
         function savePlan() {
@@ -83,6 +105,7 @@
                 });
             });
             localStorage.setItem('dailyPlan', JSON.stringify(tasks));
+            localStorage.setItem('planTitle', document.getElementById('title').value);
             loadPlan();
         }
 
@@ -108,9 +131,18 @@
             taskTime.className = 'task-time';
             taskTime.textContent = time;
 
+            let deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.textContent = 'Διαγραφή';
+            deleteBtn.addEventListener('click', () => {
+                taskElement.remove();
+                savePlan();
+            });
+
             taskElement.appendChild(checkbox);
             taskElement.appendChild(taskText);
             taskElement.appendChild(taskTime);
+            taskElement.appendChild(deleteBtn);
 
             taskElement.addEventListener('dragstart', () => {
                 taskElement.classList.add('dragging');
@@ -145,12 +177,17 @@
 
         function resetPlan() {
             localStorage.removeItem('dailyPlan');
+            localStorage.removeItem('planTitle');
             loadPlan();
         }
 
         function clearAll() {
             plan.innerHTML = '';
             savePlan();
+        }
+
+        function printPlan() {
+            window.print();
         }
 
         plan.addEventListener('dragover', (e) => {
@@ -177,6 +214,8 @@
                 }
             }, { offset: Number.NEGATIVE_INFINITY }).element;
         }
+
+        document.getElementById('title').addEventListener('input', savePlan);
 
         loadPlan();
     </script>
