@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ημερήσιο Πλάνο</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        #plan {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .task {
+            background-color: #fff;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: move;
+        }
+        .task.dragging {
+            opacity: 0.5;
+        }
+        .buttons {
+            margin-top: 20px;
+        }
+        button {
+            margin-right: 10px;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ημερήσιο Πλάνο</h1>
+    <div id="plan"></div>
+    <div class="buttons">
+        <button onclick="addTask()">Προσθήκη Εγγραφής</button>
+        <button onclick="deleteLastTask()">Διαγραφή Τελευταίας Εγγραφής</button>
+        <button onclick="resetPlan()">Επαναφορά</button>
+        <button onclick="clearAll()">Εκκαθάριση Όλων</button>
+    </div>
+
+    <script>
+        let plan = document.getElementById('plan');
+
+        function loadPlan() {
+            plan.innerHTML = '';
+            let tasks = JSON.parse(localStorage.getItem('dailyPlan')) || [];
+            tasks.forEach(task => {
+                let taskElement = document.createElement('div');
+                taskElement.className = 'task';
+                taskElement.draggable = true;
+                taskElement.textContent = task;
+                taskElement.addEventListener('dragstart', () => {
+                    taskElement.classList.add('dragging');
+                });
+                taskElement.addEventListener('dragend', () => {
+                    taskElement.classList.remove('dragging');
+                });
+                plan.appendChild(taskElement);
+            });
+        }
+
+        function savePlan() {
+            let tasks = [];
+            document.querySelectorAll('.task').forEach(task => {
+                tasks.push(task.textContent);
+            });
+            localStorage.setItem('dailyPlan', JSON.stringify(tasks));
+            loadPlan();
+        }
+
+        function addTask() {
+            let task = prompt('Προσθέστε μια νέα εγγραφή:');
+            if (task) {
+                let taskElement = document.createElement('div');
+                taskElement.className = 'task';
+                taskElement.draggable = true;
+                taskElement.textContent = task;
+                taskElement.addEventListener('dragstart', () => {
+                    taskElement.classList.add('dragging');
+                });
+                taskElement.addEventListener('dragend', () => {
+                    taskElement.classList.remove('dragging');
+                });
+                plan.appendChild(taskElement);
+                savePlan();
+            }
+        }
+
+        function deleteLastTask() {
+            let tasks = document.querySelectorAll('.task');
+            if (tasks.length > 0) {
+                tasks[tasks.length - 1].remove();
+                savePlan();
+            }
+        }
+
+        function resetPlan() {
+            localStorage.removeItem('dailyPlan');
+            loadPlan();
+        }
+
+        function clearAll() {
+            plan.innerHTML = '';
+            savePlan();
+        }
+
+        plan.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            const afterElement = getDragAfterElement(plan, e.clientY);
+            const draggingElement = document.querySelector('.dragging');
+            if (afterElement == null) {
+                plan.appendChild(draggingElement);
+            } else {
+                plan.insertBefore(draggingElement, afterElement);
+            }
+        });
+
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.task:not(.dragging)')];
+
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        loadPlan();
+    </script>
+</body>
+</html>
