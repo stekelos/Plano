@@ -175,17 +175,19 @@
 
         function addTask() {
             let text = prompt('Προσθέστε μια νέα εγγραφή:');
-            let dateTimeInput = document.createElement('input');
-            dateTimeInput.type = 'datetime-local';
-            dateTimeInput.onchange = () => {
-                let dateTime = dateTimeInput.value;
-                if (text && dateTime) {
-                    let taskElement = createTaskElement(text, dateTime);
-                    plan.appendChild(taskElement);
-                    savePlan();
-                }
-            };
-            dateTimeInput.click();
+            if (text) {
+                let dateTimeInput = document.createElement('input');
+                dateTimeInput.type = 'datetime-local';
+                dateTimeInput.onchange = () => {
+                    let dateTime = dateTimeInput.value;
+                    if (dateTime) {
+                        let taskElement = createTaskElement(text, dateTime);
+                        plan.appendChild(taskElement);
+                        savePlan();
+                    }
+                };
+                dateTimeInput.click();
+            }
         }
 
         function deleteLastTask() {
