@@ -175,12 +175,17 @@
 
         function addTask() {
             let text = prompt('Προσθέστε μια νέα εγγραφή:');
-            let dateTime = prompt('Προσθέστε την ημερομηνία και ώρα (π.χ. 2024-10-08T14:00):');
-            if (text && dateTime) {
-                let taskElement = createTaskElement(text, dateTime);
-                plan.appendChild(taskElement);
-                savePlan();
-            }
+            let dateTimeInput = document.createElement('input');
+            dateTimeInput.type = 'datetime-local';
+            dateTimeInput.onchange = () => {
+                let dateTime = dateTimeInput.value;
+                if (text && dateTime) {
+                    let taskElement = createTaskElement(text, dateTime);
+                    plan.appendChild(taskElement);
+                    savePlan();
+                }
+            };
+            dateTimeInput.click();
         }
 
         function deleteLastTask() {
@@ -269,3 +274,4 @@
     </script>
 </body>
 </html>
+
