@@ -186,7 +186,9 @@
                         savePlan();
                     }
                 };
+                document.body.appendChild(dateTimeInput);
                 dateTimeInput.click();
+                document.body.removeChild(dateTimeInput);
             }
         }
 
@@ -273,7 +275,3 @@
         document.getElementById('title').addEventListener('input', savePlan);
 
         loadPlan();
-    </script>
-</body>
-</html>
-
