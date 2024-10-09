@@ -68,14 +68,40 @@
                 display: none;
             }
         }
+        .task-input {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .task-input input, .task-input button {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .task-input button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .task-input button:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
     <input id="title" class="editable" value="Ημερήσιο Πλάνο" />
 
-    <div id="plan"></div>
-    <div class="buttons">
+    <!-- Πεδίο εισαγωγής για την προσθήκη νέων εγγραφών -->
+    <div class="task-input">
+        <input type="text" id="new-task-text" placeholder="Εισάγετε την εγγραφή">
+        <input type="datetime-local" id="new-task-datetime">
         <button onclick="addTask()">Προσθήκη Εγγραφής</button>
+    </div>
+
+    <div id="plan"></div>
+
+    <div class="buttons">
         <button onclick="deleteLastTask()">Διαγραφή Τελευταίας Εγγραφής</button>
         <button onclick="undoDelete()">Αναίρεση Τελευταίας Διαγραφής</button>
         <button onclick="resetPlan()">Επαναφορά</button>
@@ -161,21 +187,19 @@
         }
 
         function addTask() {
-            let text = prompt('Προσθέστε μια νέα εγγραφή:');
-            if (text) {
-                let dateTimeInput = document.createElement('input');
-                dateTimeInput.type = 'datetime-local';
-                dateTimeInput.onchange = () => {
-                    let dateTime = dateTimeInput.value;
-                    if (dateTime) {
-                        let taskElement = createTaskElement(text, dateTime);
-                        plan.appendChild(taskElement);
-                        savePlan();
-                    }
-                };
-                document.body.appendChild(dateTimeInput);
-                dateTimeInput.click();
-                document.body.removeChild(dateTimeInput);
+            let text = document.getElementById('new-task-text').value;
+            let dateTime = document.getElementById('new-task-datetime').value;
+
+            if (text && dateTime) {
+                let taskElement = createTaskElement(text, dateTime);
+                plan.appendChild(taskElement);
+                savePlan();
+
+                // Καθαρίζουμε τα πεδία εισαγωγής
+                document.getElementById('new-task-text').value = '';
+                document.getElementById('new-task-datetime').value = '';
+            } else {
+                alert('Παρακαλώ εισάγετε και την εγγραφή και την ημερομηνία/ώρα.');
             }
         }
 
@@ -232,31 +256,6 @@
             tasks.forEach(task => {
                 task.style.display = 'flex';
             });
-        }
-
-        plan.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            const afterElement = getDragAfterElement(plan, e.clientY);
-            const draggingElement = document.querySelector('.dragging');
-            if (afterElement == null) {
-                plan.appendChild(draggingElement);
-            } else {
-                plan.insertBefore(draggingElement, afterElement);
-            }
-        });
-
-        function getDragAfterElement(container, y) {
-            const draggableElements = [...container.querySelectorAll('.task:not(.dragging)')];
-
-            return draggableElements.reduce((closest, child) => {
-                const box = child.getBoundingClientRect();
-                const offset = y - box.top - box.height / 2;
-                if (offset < 0 && offset > closest.offset) {
-                    return { offset: offset, element: child };
-                } else {
-                    return closest;
-                }
-            }, { offset: Number.NEGATIVE_INFINITY }).element;
         }
 
         document.getElementById('title').addEventListener('input', savePlan);
