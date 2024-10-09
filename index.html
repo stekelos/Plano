@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="el"> 
+<html lang="el">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -21,13 +21,9 @@
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
-            cursor: move;
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-        .task.dragging {
-            opacity: 0.5;
         }
         .task.completed {
             background-color: #d4edda;
@@ -127,7 +123,6 @@
         function createTaskElement(text, dateTime, completed = false) {
             let taskElement = document.createElement('div');
             taskElement.className = 'task';
-            taskElement.draggable = true;
 
             let checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
@@ -159,14 +154,6 @@
             taskElement.appendChild(taskText);
             taskElement.appendChild(taskDateTime);
             taskElement.appendChild(deleteBtn);
-
-            taskElement.addEventListener('dragstart', () => {
-                taskElement.classList.add('dragging');
-            });
-            taskElement.addEventListener('dragend', () => {
-                taskElement.classList.remove('dragging');
-                savePlan();
-            });
 
             taskElement.classList.toggle('completed', completed);
 
@@ -273,80 +260,8 @@
         }
 
         document.getElementById('title').addEventListener('input', savePlan);
+
         loadPlan();
-        // Συνέχεια του υπάρχοντος κώδικα...
-
-// Προσθήκη λειτουργίας αναζήτησης
-function searchTasks() {
-    const searchTerm = document.getElementById('search-input').value.toLowerCase();
-    const tasks = document.querySelectorAll('.task');
-    
-    tasks.forEach(task => {
-        const taskText = task.querySelector('.task-text').textContent.toLowerCase();
-        if (taskText.includes(searchTerm)) {
-            task.style.display = 'flex';
-        } else {
-            task.style.display = 'none';
-        }
-    });
-}
-
-// Προσθήκη λειτουργίας ταξινόμησης
-function sortTasks() {
-    const sortBy = document.getElementById('sort-select').value;
-    const tasks = Array.from(document.querySelectorAll('.task'));
-    
-    tasks.sort((a, b) => {
-        if (sortBy === 'date') {
-            return new Date(a.querySelector('.task-datetime').textContent) - new Date(b.querySelector('.task-datetime').textContent);
-        } else if (sortBy === 'completed') {
-            return b.querySelector('.checkbox').checked - a.querySelector('.checkbox').checked;
-        }
-    });
-    
-    tasks.forEach(task => plan.appendChild(task));
-    savePlan();
-}
-
-// Προσθήκη λειτουργίας επεξεργασίας εγγραφής
-function editTask(taskElement) {
-    const taskText = taskElement.querySelector('.task-text');
-    const taskDateTime = taskElement.querySelector('.task-datetime');
-    
-    const newText = prompt('Επεξεργαστείτε την εγγραφή:', taskText.textContent);
-    if (newText !== null) {
-        taskText.textContent = newText;
-    }
-    
-    const dateTimeInput = document.createElement('input');
-    dateTimeInput.type = 'datetime-local';
-    dateTimeInput.value = taskDateTime.textContent;
-    dateTimeInput.onchange = () => {
-        taskDateTime.textContent = dateTimeInput.value;
-        savePlan();
-    };
-    document.body.appendChild(dateTimeInput);
-    dateTimeInput.click();
-    document.body.removeChild(dateTimeInput);
-}
-
-// Προσθήκη event listeners για τις νέες λειτουργίες
-document.getElementById('search-input').addEventListener('input', searchTasks);
-document.getElementById('sort-select').addEventListener('change', sortTasks);
-
-// Τροποποίηση της συνάρτησης createTaskElement για να συμπεριλάβει το κουμπί επεξεργασίας
-function createTaskElement(text, dateTime, completed = false) {
-    // ... (υπάρχων κώδικας) ...
-
-    let editBtn = document.createElement('button');
-    editBtn.className = 'edit-btn';
-    editBtn.textContent = 'Επεξεργασία';
-    editBtn.addEventListener('click', () => editTask(taskElement));
-
-    taskElement.appendChild(editBtn);
-
-    // ... (υπάρχων κώδικας) ...
-}
-
-// Αρχικοποίηση της εφαρμογής
-loadPlan();
+    </script>
+</body>
+</html>
