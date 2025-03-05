@@ -3,264 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ημερήσιο Πλάνο</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            margin: 0;
-            padding: 20px;
-        }
-        #plan {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .task {
-            background-color: #fff;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .task.completed {
-            background-color: #d4edda;
-        }
-        .buttons {
-            margin-top: 20px;
-        }
-        button {
-            margin-right: 10px;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #ddd;
-        }
-        .checkbox {
-            margin-right: 10px;
-        }
-        .delete-btn {
-            background-color: #ff4d4d;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            padding: 5px 10px;
-        }
-        .delete-btn:hover {
-            background-color: #ff1a1a;
-        }
-        .editable {
-            border: none;
-            background-color: transparent;
-            font-size: 1.5em;
-            font-weight: bold;
-            width: 100%;
-            text-align: center;
-        }
-        @media print {
-            .buttons, .delete-btn {
-                display: none;
-            }
-        }
-        .task-input {
-            margin-bottom: 20px;
-            display: flex;
-            gap: 10px;
-        }
-        .task-input input, .task-input button {
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        .task-input button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        .task-input button:hover {
-            background-color: #45a049;
-        }
-    </style>
+    <title>Γεννήτρια Ήχου Μπιπ</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/17.0.2/umd/react.development.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/17.0.2/umd/react-dom.development.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <input id="title" class="editable" value="Ημερήσιο Πλάνο" />
+<body class="bg-gray-50 min-h-screen flex items-center justify-center">
+    <div id="root"></div>
 
-    <!-- Πεδίο εισαγωγής για την προσθήκη νέων εγγραφών -->
-    <div class="task-input">
-        <input type="text" id="new-task-text" placeholder="Εισάγετε την εγγραφή">
-        <input type="datetime-local" id="new-task-datetime">
-        <button onclick="addTask()">Προσθήκη Εγγραφής</button>
-    </div>
+    <script type="text/babel">
+        const BeepGeneratorApp = () => {
+            const [beepDuration, setBeepDuration] = React.useState(0.2);
+            const [intervalBetweenBeeps, setIntervalBetweenBeeps] = React.useState(14.2);
+            const [totalLoopTime, setTotalLoopTime] = React.useState(1200);
+            const [isGenerating, setIsGenerating] = React.useState(false);
 
-    <div id="plan"></div>
-
-    <div class="buttons">
-        <button onclick="deleteLastTask()">Διαγραφή Τελευταίας Εγγραφής</button>
-        <button onclick="undoDelete()">Αναίρεση Τελευταίας Διαγραφής</button>
-        <button onclick="resetPlan()">Επαναφορά</button>
-        <button onclick="clearAll()">Εκκαθάριση Όλων</button>
-        <button onclick="printPlan()">Εκτύπωση</button>
-    </div>
-
-    <div class="date-range">
-        <label for="start-date">Από:</label>
-        <input type="date" id="start-date">
-        <label for="end-date">Έως:</label>
-        <input type="date" id="end-date">
-        <button onclick="printDateRange()">Εκτύπωση Εύρους Ημερομηνιών</button>
-    </div>
-
-    <script>
-        let plan = document.getElementById('plan');
-        let lastDeletedTask = null;
-
-        function loadPlan() {
-            plan.innerHTML = '';
-            let tasks = JSON.parse(localStorage.getItem('dailyPlan')) || [];
-            tasks.sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
-            tasks.forEach(task => {
-                let taskElement = createTaskElement(task.text, task.dateTime, task.completed);
-                plan.appendChild(taskElement);
-            });
-            document.getElementById('title').value = localStorage.getItem('planTitle') || 'Ημερήσιο Πλάνο';
-        }
-
-        function savePlan() {
-            let tasks = [];
-            document.querySelectorAll('.task').forEach(task => {
-                tasks.push({
-                    text: task.querySelector('.task-text').textContent,
-                    dateTime: task.querySelector('.task-datetime').textContent,
-                    completed: task.querySelector('.checkbox').checked
-                });
-            });
-            localStorage.setItem('dailyPlan', JSON.stringify(tasks));
-            localStorage.setItem('planTitle', document.getElementById('title').value);
-            loadPlan();
-        }
-
-        function createTaskElement(text, dateTime, completed = false) {
-            let taskElement = document.createElement('div');
-            taskElement.className = 'task';
-
-            let checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.className = 'checkbox';
-            checkbox.checked = completed;
-            checkbox.addEventListener('change', () => {
-                taskElement.classList.toggle('completed', checkbox.checked);
-                savePlan();
-            });
-
-            let taskText = document.createElement('span');
-            taskText.className = 'task-text';
-            taskText.textContent = text;
-
-            let taskDateTime = document.createElement('span');
-            taskDateTime.className = 'task-datetime';
-            taskDateTime.textContent = dateTime;
-
-            let deleteBtn = document.createElement('button');
-            deleteBtn.className = 'delete-btn';
-            deleteBtn.textContent = 'Διαγραφή';
-            deleteBtn.addEventListener('click', () => {
-                lastDeletedTask = { text, dateTime, completed };
-                taskElement.remove();
-                savePlan();
-            });
-
-            taskElement.appendChild(checkbox);
-            taskElement.appendChild(taskText);
-            taskElement.appendChild(taskDateTime);
-            taskElement.appendChild(deleteBtn);
-
-            taskElement.classList.toggle('completed', completed);
-
-            return taskElement;
-        }
-
-        function addTask() {
-            let text = document.getElementById('new-task-text').value;
-            let dateTime = document.getElementById('new-task-datetime').value;
-
-            if (text && dateTime) {
-                let taskElement = createTaskElement(text, dateTime);
-                plan.appendChild(taskElement);
-                savePlan();
-
-                // Καθαρίζουμε τα πεδία εισαγωγής
-                document.getElementById('new-task-text').value = '';
-                document.getElementById('new-task-datetime').value = '';
-            } else {
-                alert('Παρακαλώ εισάγετε και την εγγραφή και την ημερομηνία/ώρα.');
-            }
-        }
-
-        function deleteLastTask() {
-            let tasks = document.querySelectorAll('.task');
-            if (tasks.length > 0) {
-                lastDeletedTask = {
-                    text: tasks[tasks.length - 1].querySelector('.task-text').textContent,
-                    dateTime: tasks[tasks.length - 1].querySelector('.task-datetime').textContent,
-                    completed: tasks[tasks.length - 1].querySelector('.checkbox').checked
-                };
-                tasks[tasks.length - 1].remove();
-                savePlan();
-            }
-        }
-
-        function undoDelete() {
-            if (lastDeletedTask) {
-                let taskElement = createTaskElement(lastDeletedTask.text, lastDeletedTask.dateTime, lastDeletedTask.completed);
-                plan.appendChild(taskElement);
-                lastDeletedTask = null;
-                savePlan();
-            }
-        }
-
-        function resetPlan() {
-            localStorage.removeItem('dailyPlan');
-            localStorage.removeItem('planTitle');
-            loadPlan();
-        }
-
-        function clearAll() {
-            plan.innerHTML = '';
-            savePlan();
-        }
-
-        function printPlan() {
-            window.print();
-        }
-
-        function printDateRange() {
-            let startDate = new Date(document.getElementById('start-date').value);
-            let endDate = new Date(document.getElementById('end-date').value);
-            let tasks = document.querySelectorAll('.task');
-            tasks.forEach(task => {
-                let taskDate = new Date(task.querySelector('.task-datetime').textContent);
-                if (taskDate < startDate || taskDate > endDate) {
-                    task.style.display = 'none';
-                } else {
-                    task.style.display = 'flex';
+            const generateBeepWav = async () => {
+                setIsGenerating(true);
+                
+                try {
+                    const beepFrequency = 1000; // 1000 Hz
+                    const sampleRate = 44100;
+                    const numChannels = 1;
+                    const bitsPerSample = 16;
+                    
+                    // Υπολογισμός του συνολικού αριθμού δειγμάτων
+                    const cycleLength = (beepDuration + intervalBetweenBeeps) * sampleRate;
+                    const numRepeats = Math.ceil(totalLoopTime / (beepDuration + intervalBetweenBeeps));
+                    const totalSamples = cycleLength * numRepeats;
+                    
+                    // Δημιουργία WAV αρχείου
+                    const wavBuffer = new ArrayBuffer(44 + totalSamples * 2);
+                    const view = new DataView(wavBuffer);
+                    
+                    // Εγγραφή WAV header
+                    view.setUint8(0, 'R'.charCodeAt(0));
+                    view.setUint8(1, 'I'.charCodeAt(0));
+                    view.setUint8(2, 'F'.charCodeAt(0));
+                    view.setUint8(3, 'F'.charCodeAt(0));
+                    view.setUint32(4, 36 + totalSamples * 2, true);
+                    view.setUint8(8, 'W'.charCodeAt(0));
+                    view.setUint8(9, 'A'.charCodeAt(0));
+                    view.setUint8(10, 'V'.charCodeAt(0));
+                    view.setUint8(11, 'E'.charCodeAt(0));
+                    view.setUint8(12, 'f'.charCodeAt(0));
+                    view.setUint8(13, 'm'.charCodeAt(0));
+                    view.setUint8(14, 't'.charCodeAt(0));
+                    view.setUint8(15, ' '.charCodeAt(0));
+                    view.setUint32(16, 16, true);
+                    view.setUint16(20, 1, true);
+                    view.setUint16(22, numChannels, true);
+                    view.setUint32(24, sampleRate, true);
+                    view.setUint32(28, sampleRate * numChannels * 2, true);
+                    view.setUint16(32, numChannels * 2, true);
+                    view.setUint16(34, bitsPerSample, true);
+                    view.setUint8(36, 'd'.charCodeAt(0));
+                    view.setUint8(37, 'a'.charCodeAt(0));
+                    view.setUint8(38, 't'.charCodeAt(0));
+                    view.setUint8(39, 'a'.charCodeAt(0));
+                    view.setUint32(40, totalSamples * 2, true);
+                    
+                    // Δημιουργία δεδομένων WAV
+                    const buffer = new Int16Array(totalSamples);
+                    
+                    for (let repeat = 0; repeat < numRepeats; repeat++) {
+                        // Δημιουργία μπιπ
+                        const beepSamples = beepDuration * sampleRate;
+                        for (let i = 0; i < beepSamples; i++) {
+                            const sample = Math.floor(
+                                32767 * 0.5 * Math.sin(2 * Math.PI * beepFrequency * (i / sampleRate)) * 
+                                (i < beepSamples * 0.01 ? i / (beepSamples * 0.01) : 
+                                 i > beepSamples * 0.99 ? (beepSamples - i) / (beepSamples * 0.01) : 1)
+                            );
+                            buffer[repeat * cycleLength + i] = sample;
+                        }
+                    }
+                    
+                    // Εγγραφή δεδομένων στο WAV
+                    const dataView = new DataView(wavBuffer);
+                    for (let i = 0; i < buffer.length; i++) {
+                        dataView.setInt16(44 + i * 2, buffer[i], true);
+                    }
+                    
+                    // Δημιουργία blob και κατέβασμα
+                    const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = 'LoupaProp.wav';
+                    link.click();
+                    
+                    // Καθαρισμός
+                    URL.revokeObjectURL(url);
+                    
+                } catch (error) {
+                    console.error('Σφάλμα κατά τη δημιουργία του αρχείου WAV:', error);
+                    alert('Προέκυψε σφάλμα κατά τη δημιουργία του αρχείου.');
+                } finally {
+                    setIsGenerating(false);
                 }
-            });
-            window.print();
-            tasks.forEach(task => {
-                task.style.display = 'flex';
-            });
-        }
+            };
 
-        document.getElementById('title').addEventListener('input', savePlan);
+            return (
+                <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
+                    <h1 className="text-2xl font-bold mb-6 text-center">Γεννήτρια Ήχου Μπιπ</h1>
+                    
+                    <div className="mb-4">
+                        <label className="block text-gray-700 mb-2">
+                            Διάρκεια Μπιπ (δευτερόλεπτα):
+                            <input 
+                                type="number" 
+                                step="0.1" 
+                                min="0.1" 
+                                max="5" 
+                                value={beepDuration}
+                                onChange={(e) => setBeepDuration(parseFloat(e.target.value))}
+                                className="w-full p-2 border rounded mt-1"
+                            />
+                        </label>
+                    </div>
+                    
+                    <div className="mb-4">
+                        <label className="block text-gray-700 mb-2">
+                            Διάστημα μεταξύ Μπιπ (δευτερόλεπτα):
+                            <input 
+                                type="number" 
+                                step="0.1" 
+                                min="0" 
+                                max="60" 
+                                value={intervalBetweenBeeps}
+                                onChange={(e) => setIntervalBetweenBeeps(parseFloat(e.target.value))}
+                                className="w-full p-2 border rounded mt-1"
+                            />
+                        </label>
+                    </div>
+                    
+                    <div className="mb-6">
+                        <label className="block text-gray-700 mb-2">
+                            Συνολικός Χρόνος (δευτερόλεπτα):
+                            <input 
+                                type="number" 
+                                step="60" 
+                                min="60" 
+                                max="3600" 
+                                value={totalLoopTime}
+                                onChange={(e) => setTotalLoopTime(parseFloat(e.target.value))}
+                                className="w-full p-2 border rounded mt-1"
+                            />
+                        </label>
+                    </div>
+                    
+                    <button 
+                        onClick={generateBeepWav}
+                        disabled={isGenerating}
+                        className={`w-full p-3 rounded text-white font-bold ${
+                            isGenerating 
+                                ? 'bg-gray-500 cursor-not-allowed' 
+                                : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
+                        }`}
+                    >
+                        {isGenerating ? 'Δημιουργία...' : 'Δημιουργία WAV'}
+                    </button>
+                    
+                    <div className="mt-4 text-sm text-gray-600 text-center">
+                        <p>Δημιουργήστε ένα WAV αρχείο με επαναλαμβανόμενους ήχους μπιπ</p>
+                    </div>
+                </div>
+            );
+        };
 
-        loadPlan();
+        ReactDOM.render(<BeepGeneratorApp />, document.getElementById('root'));
     </script>
 </body>
 </html>
