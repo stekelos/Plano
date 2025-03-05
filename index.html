@@ -7,7 +7,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/17.0.2/umd/react.development.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/17.0.2/umd/react-dom.development.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50 min-h-screen flex items-center justify-center">
@@ -30,9 +29,11 @@
                     const bitsPerSample = 16;
                     
                     // Υπολογισμός του συνολικού αριθμού δειγμάτων
-                    const cycleLength = (beepDuration + intervalBetweenBeeps) * sampleRate;
+                    const beepSamples = Math.floor(beepDuration * sampleRate);
+                    const silenceSamples = Math.floor(intervalBetweenBeeps * sampleRate);
+                    const cycleSamples = beepSamples + silenceSamples;
                     const numRepeats = Math.ceil(totalLoopTime / (beepDuration + intervalBetweenBeeps));
-                    const totalSamples = cycleLength * numRepeats;
+                    const totalSamples = cycleSamples * numRepeats;
                     
                     // Δημιουργία WAV αρχείου
                     const wavBuffer = new ArrayBuffer(44 + totalSamples * 2);
@@ -69,15 +70,32 @@
                     const buffer = new Int16Array(totalSamples);
                     
                     for (let repeat = 0; repeat < numRepeats; repeat++) {
-                        // Δημιουργία μπιπ
-                        const beepSamples = beepDuration * sampleRate;
+                        const cycleStartIndex = repeat * cycleSamples;
+                        
+                        // Δημιουργία μπιπ με ομαλή είσοδο και έξοδο
                         for (let i = 0; i < beepSamples; i++) {
-                            const sample = Math.floor(
-                                32767 * 0.5 * Math.sin(2 * Math.PI * beepFrequency * (i / sampleRate)) * 
-                                (i < beepSamples * 0.01 ? i / (beepSamples * 0.01) : 
-                                 i > beepSamples * 0.99 ? (beepSamples - i) / (beepSamples * 0.01) : 1)
+                            // Δημιουργία ημιτονοειδούς κύματος με φθίνουσα ένταση
+                            const t = i / sampleRate;
+                            const envelope = Math.min(
+                                // Ομαλή είσοδος
+                                i < sampleRate * 0.01 ? i / (sampleRate * 0.01) : 
+                                // Ομαλή έξοδος
+                                i > beepSamples - sampleRate * 0.01 ? 
+                                (beepSamples - i) / (sampleRate * 0.01) : 
+                                1, 
+                                1
                             );
-                            buffer[repeat * cycleLength + i] = sample;
+                            
+                            const sample = Math.floor(
+                                32767 * 0.5 * envelope * Math.sin(2 * Math.PI * beepFrequency * t)
+                            );
+                            
+                            buffer[cycleStartIndex + i] = sample;
+                        }
+                        
+                        // Δημιουργία σιωπής
+                        for (let i = 0; i < silenceSamples; i++) {
+                            buffer[cycleStartIndex + beepSamples + i] = 0;
                         }
                     }
                     
